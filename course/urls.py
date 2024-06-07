@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import CourseEnrollmentListCreateAPIView, CourseEnrollmentRetrieveUpdateDestroyAPIView, CourseListCreateAPIView, CourseMaterialListCreateAPIView, CourseMaterialRetrieveUpdateDestroyAPIView, CourseRetrieveUpdateDestroyAPIView, CourseTimetableAPIView, CourseTimetableListCreateAPIView, CourseTimetableRetrieveUpdateDestroyAPIView, EnrolledCoursesAPIView, EnrollmentCheckAPIView
+from .views import CourseEnrollmentListCreateAPIView, CourseEnrollmentRetrieveUpdateDestroyAPIView, CourseListCreateAPIView, CourseMaterialListCreateAPIView, CourseMaterialRetrieveUpdateDestroyAPIView, CourseRetrieveUpdateDestroyAPIView, CourseTimetableAPIView, CourseTimetableListCreateAPIView, CourseTimetableRetrieveUpdateDestroyAPIView, EnrolledCoursesAPIView, EnrollmentCheckAPIView, EvaluationAPIView, VirtualCourseAPIView
 
 urlpatterns = [
     path('', CourseListCreateAPIView.as_view(), name='course-list-create'),
@@ -13,4 +13,8 @@ urlpatterns = [
     path('<int:courseId>/materials/', CourseMaterialListCreateAPIView.as_view(), name='material-list-create'),
     path('materials/<int:pk>/', CourseMaterialRetrieveUpdateDestroyAPIView.as_view(), name='material-retrieve-update-destroy'),
     path('enrollments/my-courses/', EnrolledCoursesAPIView.as_view(), name='enrolled-courses'),
+    path('virtual-class/<int:pk>/', VirtualCourseAPIView.as_view(), name='virtual-class-detail'),
+    path('virtual-class/', VirtualCourseAPIView.as_view(), name='virtual-class-list-create'),
+    path('evaluations/', EvaluationAPIView.as_view(), name='evaluation-create'),
+    path('evaluations/<int:pk>/', EvaluationAPIView.as_view(), name='evaluation-detail'),
 ]

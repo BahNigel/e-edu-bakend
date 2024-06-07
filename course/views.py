@@ -1,19 +1,22 @@
 from rest_framework import generics
-from .models import Course, CourseEnrollment, CourseMaterial, CourseTimetable
-from .serializers import CourseEnrollmentSerializer, CourseMaterialSerializer, CourseSerializer, CourseTimetableSerializer
+
+from authapp.serializers import UserSerializer
+from .models import Course, CourseEnrollment, CourseMaterial, CourseTimetable, Evaluation, VertualClass
+from .serializers import CourseEnrollmentSerializer, CourseMaterialSerializer, CourseSerializer, CourseSerializer1, CourseTimetableSerializer, EvaluationSerializer, VertualClassSerializer
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import serializers
+from django.contrib.auth.models import User
 from rest_framework.permissions import IsAuthenticated
 
 class CourseListCreateAPIView(generics.ListCreateAPIView):
-    serializer_class = CourseSerializer
+    serializer_class = CourseSerializer1
     permission_classes = [permissions.IsAuthenticated]  
 
     def get_queryset(self):
         # Filter courses by the current logged-in user
-        return Course.objects.filter(user=self.request.user)
+        return Course.objects.filter()
 
     def perform_create(self, serializer):
         # Save the logged-in user as the owner of the course
@@ -69,6 +72,17 @@ class EnrolledCoursesAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
+        course_id = request.query_params.get('course')
+        enrolled_users = []
+
+        if course_id:
+            enrollments = CourseEnrollment.objects.filter(course__id=course_id)
+            for enrollment in enrollments:
+                # Serialize user data using UserSerializer
+                user_data = UserSerializer(enrollment.user).data
+                enrolled_users.append(user_data)
+            return Response(enrolled_users)
+
         enrollments = CourseEnrollment.objects.filter(user=request.user)
         courses = [enrollment.course for enrollment in enrollments]
         serializer = CourseSerializer(courses, many=True)
@@ -190,3 +204,147 @@ class CourseMaterialRetrieveUpdateDestroyAPIView(APIView):
         matetia.delete()
         return Response({'message': "data deleted"})
     
+
+
+class VirtualCourseAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        link = request.data.get('link')
+        m_link = request.data.get('m_link')
+        course_id = request.data.get('course_id')
+        course = Course.objects.filter(id=course_id).first()
+        
+        if course:
+            data = {'link': link, 'm_link': m_link, 'course': course.id}
+            serializer = VertualClassSerializer(data=data)
+            
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'error': "This course cannot be found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    def get(self, request, pk=None):
+        course_id = request.query_params.get('course')
+        if pk:
+            virtual_class = VertualClass.objects.filter(id=pk).first()
+            if virtual_class:
+                serializer = VertualClassSerializer(virtual_class)
+                return Response(serializer.data)
+            else:
+                return Response({'error': "This virtual class cannot be found"}, status=status.HTTP_404_NOT_FOUND)
+        elif course_id:
+            virtual_classes = VertualClass.objects.filter(course_id=course_id)
+            serializer = VertualClassSerializer(virtual_classes, many=True)
+            return Response(serializer.data)
+        else:
+            return Response({'error': "Course ID or Virtual Class ID required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request, pk):
+        virtual_class = VertualClass.objects.filter(id=pk).first()
+        
+        if virtual_class:
+            serializer = VertualClassSerializer(virtual_class, data=request.data)
+            
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'error': "This virtual class cannot be found"}, status=status.HTTP_404_NOT_FOUND)
+
+    def patch(self, request, pk):
+        virtual_class = VertualClass.objects.filter(id=pk).first()
+        
+        if virtual_class:
+            serializer = VertualClassSerializer(virtual_class, data=request.data, partial=True)
+            
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'error': "This virtual class cannot be found"}, status=status.HTTP_404_NOT_FOUND)
+
+    def delete(self, request, pk):
+        virtual_class = VertualClass.objects.filter(id=pk).first()
+        
+        if virtual_class:
+            virtual_class.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response({'error': "This virtual class cannot be found"}, status=status.HTTP_404_NOT_FOUND)
+        
+
+
+class EvaluationAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        data = request.data
+        course_id = data.get('course_id')
+        course = Course.objects.filter(id=course_id).first()
+        
+        if course:
+            data['course'] = course.id
+            serializer = EvaluationSerializer(data=data)
+            
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'error': "This course cannot be found"}, status=status.HTTP_404_NOT_FOUND)
+
+    def get(self, request, pk=None):
+        course_id = request.query_params.get('course')
+        if pk:
+            evaluation_class = Evaluation.objects.filter(id=pk).first()
+            if evaluation_class:
+                serializer = EvaluationSerializer(evaluation_class)
+                return Response(serializer.data)
+            else:
+                return Response({'error': "This evaluation class cannot be found"}, status=status.HTTP_404_NOT_FOUND)
+        elif course_id:
+            evaluation_classes = Evaluation.objects.filter(course_id=course_id)
+            serializer = EvaluationSerializer(evaluation_classes, many=True)
+            return Response(serializer.data)
+        else:
+            return Response({'error': "Course ID or evaluation Class ID required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request, pk):
+        evaluation = Evaluation.objects.filter(id=pk).first()
+        
+        if evaluation:
+            serializer = EvaluationSerializer(evaluation, data=request.data)
+            
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'error': "This evaluation cannot be found"}, status=status.HTTP_404_NOT_FOUND)
+
+    def patch(self, request, pk):
+        evaluation = Evaluation.objects.filter(id=pk).first()
+        
+        if evaluation:
+            serializer = EvaluationSerializer(evaluation, data=request.data, partial=True)
+            
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'error': "This evaluation cannot be found"}, status=status.HTTP_404_NOT_FOUND)
+
+    def delete(self, request, pk):
+        evaluation = Evaluation.objects.filter(id=pk).first()
+        
+        if evaluation:
+            evaluation.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response({'error': "This evaluation cannot be found"}, status=status.HTTP_404_NOT_FOUND)

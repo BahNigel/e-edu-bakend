@@ -5,9 +5,18 @@ from rest_framework import serializers
 from .models import UserProfile
 
 class UserSerializer(serializers.ModelSerializer):
+    type = serializers.SerializerMethodField()
+
+    def get_type(self, obj):
+        profile = UserProfile.objects.filter(user__id=obj.id).first()
+        if profile:
+            return profile.user_type
+        return None
+    
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name')
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'type')
+
 
 class RegisterSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField()

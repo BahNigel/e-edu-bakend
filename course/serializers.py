@@ -1,7 +1,25 @@
 from rest_framework import serializers
-from .models import Course, CourseEnrollment, CourseMaterial, CourseTimetable
+
+from authapp.serializers import RegisterSerializer, UserSerializer
+from .models import Course, CourseEnrollment, CourseMaterial, CourseTimetable, Evaluation, VertualClass
 
 class CourseSerializer(serializers.ModelSerializer):
+    creator = serializers.SerializerMethodField()
+    user = UserSerializer()
+
+    class Meta:
+        model = Course
+        fields = ['id', 'title', 'description', 'duration', 'course_image', 'creator','user']
+
+    def get_creator(self, obj):
+        # Check if the logged-in user is the creator of the course
+        request = self.context.get('request')
+        if request and request.user == obj.user:
+            return True
+        return False
+    
+
+class CourseSerializer1(serializers.ModelSerializer):
     creator = serializers.SerializerMethodField()
 
     class Meta:
@@ -14,7 +32,6 @@ class CourseSerializer(serializers.ModelSerializer):
         if request and request.user == obj.user:
             return True
         return False
-    
 
 class CourseEnrollmentSerializer(serializers.ModelSerializer):
     course_id = serializers.IntegerField(write_only=True)
@@ -49,3 +66,14 @@ class CourseMaterialSerializer(serializers.ModelSerializer):
         if request is not None and instance.file:
             ret['file'] = request.build_absolute_uri(instance.file.url)
         return ret
+    
+class VertualClassSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VertualClass
+        fields = '__all__'
+
+
+class EvaluationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Evaluation
+        fields = '__all__'

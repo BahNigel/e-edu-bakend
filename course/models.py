@@ -61,3 +61,24 @@ class CourseMaterial(models.Model):
     description = models.TextField()
     type = models.CharField(max_length=10, choices=MATERIAL_TYPES)
     file = models.FileField(upload_to='course_materials/%Y/%m/%d/')
+
+
+class VertualClass(models.Model):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='course_vertual_class')
+    link = models.CharField(max_length=100, null=True)
+    m_link = models.CharField(max_length=100, null=True)
+
+
+class Evaluation(models.Model):
+    EVALUATION_TYPES = [
+        ('CC', 'CC'),
+        ('TPE', 'TPE'),
+        ('TP', 'TP'),
+        ('EXAMS', 'EXAMS'),
+    ]
+
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='course_evaluations')
+    type = models.CharField(max_length=10, choices=EVALUATION_TYPES)
+    student = models.ForeignKey(User, on_delete=models.CASCADE)
+    marks = models.CharField(max_length=100)
+    feedback = models.TextField()
